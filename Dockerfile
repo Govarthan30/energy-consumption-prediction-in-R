@@ -1,5 +1,5 @@
 # Use prebuilt R image with Plumber installed
-FROM rocker/plumber:4.3.1
+FROM rocker/plumber:latest
 
 # Set working directory inside container
 WORKDIR /app
