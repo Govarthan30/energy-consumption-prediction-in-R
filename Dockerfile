@@ -1,16 +1,16 @@
-# Use prebuilt R image with Plumber installed
-FROM rocker/plumber:latest
+# Use official R image
+FROM rocker/r-ver:4.3.1
 
-# Set working directory inside container
+# Set working directory
 WORKDIR /app
 
-# Copy your API code into the container
+# Install plumber and dplyr
+RUN R -e "install.packages(c('plumber','dplyr'), repos='https://cloud.r-project.org')"
+
+# Copy your API code
 COPY energy.R ./energy.R
 
-# If you need dplyr, install it here (optional, takes less time than plumber)
-RUN R -e "install.packages('dplyr', repos='https://cloud.r-project.org')"
-
-# Expose the port the API will run on
+# Expose the port
 EXPOSE 8000
 
 # Run the Plumber API
