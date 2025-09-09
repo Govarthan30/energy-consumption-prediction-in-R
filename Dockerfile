@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install R packages (force system library path)
 RUN R -e "install.packages(c('remotes'), repos='https://cloud.r-project.org', lib='/usr/local/lib/R/site-library')" \
- && R -e "remotes::install_cran(c('plumber','dplyr','ggplot2','caret'), lib='/usr/local/lib/R/site-library')"
+ && R -e "remotes::install_cran(c('plumber','dplyr','ggplot2','caret','jsonlite'), lib='/usr/local/lib/R/site-library')"
 
 # Copy project files into container
 COPY . .
