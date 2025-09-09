@@ -4,7 +4,7 @@ FROM rocker/r-ver:4.3.1
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies needed for plumber, dplyr, ggplot2, and caret
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libssl-dev \
@@ -15,15 +15,17 @@ RUN apt-get update && apt-get install -y \
     libmagick++-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install R packages (force system library path)
-RUN R -e "install.packages(c('remotes'), repos='https://cloud.r-project.org', lib='/usr/local/lib/R/site-library')" \
- && R -e "remotes::install_cran(c('plumber','dplyr','ggplot2','caret','jsonlite'), lib='/usr/local/lib/R/site-library')"
+# Install required R packages globally
+RUN R -e "install.packages(c('plumber','dplyr','ggplot2','caret','jsonlite'), repos='https://cloud.r-project.org')"
 
 # Copy project files into container
 COPY . .
 
 # Expose API port
 EXPOSE 8000
+
+# Ensure R knows where to find installed packages
+ENV R_LIBS_SITE=/usr/local/lib/R/site-library
 
 # Run the Plumber API
 CMD ["Rscript", "run_api.r"]
