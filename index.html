@@ -379,7 +379,7 @@
       const solar = document.getElementById("solar").value;
 
       try {
-        const res = await fetch("http://localhost:8000/predict", {
+        const res = await fetch("https://energy-consumption-prediction-in-r-b0ll.onrender.com/predict", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ temp, humidity, wind, solar })
