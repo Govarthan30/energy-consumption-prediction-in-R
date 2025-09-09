@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>⚡ Energy Consumption Forecast</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Add Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --primary: #007bff;
@@ -278,6 +280,25 @@
       100% { transform: scale(1); }
     }
 
+    /* Chart Container */
+    .chart-container {
+      margin-top: 30px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 25px 20px;
+      border-radius: 16px;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .chart-container h4 {
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+    }
+
     /* Responsive */
     @media (max-width: 500px) {
       .container {
@@ -286,6 +307,9 @@
       }
       h2 {
         font-size: 1.6rem;
+      }
+      .chart-container {
+        padding: 20px 15px;
       }
     }
 
@@ -315,35 +339,6 @@
         opacity: 0;
       }
     }
-
-    /* Add 3 floating particles */
-    body::after {
-      content: "";
-      position: absolute;
-      top: 80%;
-      left: 10%;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: rgba(29, 185, 84, 0.6);
-      box-shadow: 0 0 8px rgba(29, 185, 84, 0.8);
-      animation: floatParticle 10s infinite 1s ease-in-out;
-      z-index: -1;
-    }
-
-    body::before {
-      content: "";
-      position: absolute;
-      top: 60%;
-      right: 15%;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: rgba(255, 193, 7, 0.6);
-      box-shadow: 0 0 8px rgba(255, 193, 7, 0.8);
-      animation: floatParticle 12s infinite 0.5s ease-in-out;
-      z-index: -1;
-    }
   </style>
 </head>
 <body>
@@ -369,6 +364,12 @@
     <h3><i class="fas fa-chart-line"></i> Forecast Results</h3>
     <p id="linear">Linear Model: —</p>
     <p id="nonlinear">Non-linear Model: —</p>
+
+    <!-- Chart Section -->
+    <div class="chart-container">
+      <h4><i class="fas fa-chart-area"></i> Model Comparison (Last 10 Samples)</h4>
+      <canvas id="comparisonChart" height="150"></canvas>
+    </div>
   </div>
 
   <script>
@@ -404,6 +405,109 @@
           linearEl.classList.remove('pulse');
           nonlinearEl.classList.remove('pulse');
         }, 800);
+
+        // ========== RENDER CHART ==========
+        const chartData = data.chart_data;
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+        // Destroy previous chart if exists
+        if (window.comparisonChart) {
+          window.comparisonChart.destroy();
+        }
+
+        window.comparisonChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: chartData.labels,
+            datasets: [
+              {
+                label: 'Actual',
+                data: chartData.actual,
+                borderColor: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderWidth: 3,
+                pointBackgroundColor: '#ffffff',
+                pointRadius: 4,
+                tension: 0.3,
+                fill: false
+              },
+              {
+                label: 'Linear Model',
+                data: chartData.linear,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                tension: 0.3,
+                fill: false
+              },
+              {
+                label: 'Non-linear Model',
+                data: chartData.nonlinear,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                tension: 0.3,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: 'white',
+                  font: {
+                    size: 12
+                  }
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: 'rgba(255,255,255,0.7)',
+                  font: {
+                    size: 11
+                  }
+                },
+                grid: {
+                  color: 'rgba(255,255,255,0.1)'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Consumption (kWh)',
+                  color: 'rgba(255,255,255,0.8)',
+                  font: {
+                    size: 12
+                  }
+                },
+                ticks: {
+                  color: 'rgba(255,255,255,0.7)'
+                },
+                grid: {
+                  color: 'rgba(255,255,255,0.1)'
+                }
+              }
+            },
+            animation: {
+              duration: 1000,
+              easing: 'easeOutQuart'
+            }
+          }
+        });
 
       } catch (error) {
         console.error("Prediction failed:", error);
