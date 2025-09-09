@@ -1,17 +1,14 @@
-# Use official R image
 FROM rocker/r-ver:4.3.1
 
-# Set working directory
 WORKDIR /app
 
-# Install plumber and dplyr
+# Install packages
 RUN R -e "install.packages(c('plumber','dplyr'), repos='https://cloud.r-project.org')"
 
-# Copy your API code
-COPY energy.R ./energy.R
+# Copy all project files into container
+COPY . .
 
-# Expose the port
 EXPOSE 8000
 
-# Run the Plumber API
-CMD ["R", "-e", "pr <- plumber::plumb('energy.R'); pr$run(host='0.0.0.0', port=8000)"]
+# Run API
+CMD ["Rscript", "run_api.r"]
