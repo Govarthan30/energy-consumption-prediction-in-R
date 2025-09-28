@@ -1,5 +1,5 @@
 # =====================================================
-# Energy Consumption Forecasting API
+# Energy Consumption Forecasting API with Graph Data
 # =====================================================
 
 library(plumber)
@@ -23,7 +23,7 @@ function(req, res) {
 }
 
 # -----------------------------------------------------
-# Step 1: Create Synthetic Dataset
+# Step 1: Synthetic Dataset
 # -----------------------------------------------------
 set.seed(123)
 
@@ -40,14 +40,13 @@ energy_data <- data.frame(
   SolarRadiation = round(runif(n, min=0, max=1000), 1)
 )
 
-# Simulated consumption
 energy_data$Consumption <- round(
   50 +
-  0.8 * energy_data$Temperature -
-  0.3 * energy_data$Humidity +
-  0.5 * energy_data$SolarRadiation/100 +
-  5 * sin(2*pi*as.numeric(format(energy_data$DateTime, "%H"))/24) +
-  rnorm(n, mean=0, sd=5), 1
+    0.8 * energy_data$Temperature -
+    0.3 * energy_data$Humidity +
+    0.5 * energy_data$SolarRadiation/100 +
+    5 * sin(2*pi*as.numeric(format(energy_data$DateTime, "%H"))/24) +
+    rnorm(n, mean=0, sd=5), 1
 )
 
 # -----------------------------------------------------
@@ -62,12 +61,16 @@ model_nonlinear <- nls(
   start = list(a = 1, b = 0.01, c = 1, d = 1)
 )
 
+# Add predictions for training set
+energy_data$Pred_Linear <- predict(model_linear, newdata = energy_data)
+energy_data$Pred_Nonlinear <- predict(model_nonlinear, newdata = energy_data)
+
 # -----------------------------------------------------
-# Step 3: Define API
+# Step 3: API Endpoints
 # -----------------------------------------------------
 
 #* @apiTitle Energy Forecast API
-#* @apiDescription Predict energy consumption using Linear & Non-linear regression models
+#* @apiDescription Predict energy consumption and return graph data
 
 #* Predict Energy Consumption
 #* @param temp:numeric Temperature in °C
@@ -90,4 +93,51 @@ function(temp, humidity, wind, solar) {
     linear_prediction = round(pred_linear, 2),
     nonlinear_prediction = round(pred_nonlinear, 2)
   )
+}
+
+# -----------------------------------------------------
+# Step 4: Graph Data APIs
+# -----------------------------------------------------
+
+#* Return Accuracy Metrics (MAPE, MBE, Accuracy %)
+#* @get /accuracy
+function() {
+  mape <- function(actual, predicted) mean(abs((actual - predicted) / actual)) * 100
+  mbe  <- function(actual, predicted) mean(predicted - actual)
+  
+  list(
+    linear = list(
+      MAPE = round(mape(energy_data$Consumption, energy_data$Pred_Linear), 2),
+      MBE = round(mbe(energy_data$Consumption, energy_data$Pred_Linear), 2),
+      Accuracy = round(100 - mape(energy_data$Consumption, energy_data$Pred_Linear), 2)
+    ),
+    nonlinear = list(
+      MAPE = round(mape(energy_data$Consumption, energy_data$Pred_Nonlinear), 2),
+      MBE = round(mbe(energy_data$Consumption, energy_data$Pred_Nonlinear), 2),
+      Accuracy = round(100 - mape(energy_data$Consumption, energy_data$Pred_Nonlinear), 2)
+    )
+  )
+}
+
+#* Return Graph Data: Actual vs Predicted
+#* @get /graphdata
+function() {
+  # Send last 100 points for performance
+  df <- tail(energy_data, 100) %>%
+    mutate(Date = as.character(DateTime)) %>%
+    select(Date, Consumption, Pred_Linear, Pred_Nonlinear)
+  
+  return(df)
+}
+
+#* Return Feature vs Consumption (for plotting)
+#* @get /featuregraph
+function() {
+  # Relationship between Temperature and Consumption
+  df <- energy_data %>%
+    group_by(Temperature) %>%
+    summarise(Avg_Consumption = mean(Consumption)) %>%
+    arrange(Temperature)
+  
+  return(df)
 }
